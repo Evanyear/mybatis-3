@@ -15,12 +15,6 @@
  */
 package org.apache.ibatis.autoconstructor;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.io.Reader;
-import java.util.List;
-
 import org.apache.ibatis.BaseDataTest;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.io.Resources;
@@ -31,17 +25,30 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.Reader;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 class AutoConstructorTest {
   private static SqlSessionFactory sqlSessionFactory;
-
+  /**
+    * @description 记载资源 创建工厂
+    * @param
+    * @author LGL
+    *
+    */
   @BeforeAll
   static void setUp() throws Exception {
     // create a SqlSessionFactory
+    //加载mybatis-config.xml文件  创建sqlSessionFactory对象
     try (Reader reader = Resources.getResourceAsReader("org/apache/ibatis/autoconstructor/mybatis-config.xml")) {
       sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
     }
 
     // populate in-memory database
+    //初始化数据到内存中。基于SQL文件
     BaseDataTest.runScript(sqlSessionFactory.getConfiguration().getEnvironment().getDataSource(),
         "org/apache/ibatis/autoconstructor/CreateDB.sql");
   }
@@ -52,6 +59,7 @@ class AutoConstructorTest {
       final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
       final Object subject = mapper.getSubject(1);
       assertNotNull(subject);
+      System.out.println("方法 fullyPopulatedSubject 执行成功");
     }
   }
 
@@ -60,6 +68,7 @@ class AutoConstructorTest {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
       final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
       assertThrows(PersistenceException.class, mapper::getSubjects);
+      System.out.println("方法 primitiveSubjects 执行成功");
     }
   }
 
@@ -68,6 +77,7 @@ class AutoConstructorTest {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
       final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
       verifySubjects(mapper.getAnnotatedSubjects());
+      System.out.println("方法 annotatedSubject 执行成功");
     }
   }
 
@@ -76,6 +86,7 @@ class AutoConstructorTest {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
       final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
       assertThrows(PersistenceException.class, mapper::getBadSubjects);
+      System.out.println("方法 badSubject 执行成功");
     }
   }
 
@@ -84,11 +95,13 @@ class AutoConstructorTest {
     try (SqlSession sqlSession = sqlSessionFactory.openSession()) {
       final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
       verifySubjects(mapper.getExtensiveSubjects());
+      System.out.println("方法 extensiveSubject 执行成功");
     }
   }
 
   private void verifySubjects(final List<?> subjects) {
     assertNotNull(subjects);
     Assertions.assertThat(subjects.size()).isEqualTo(3);
+    System.out.println("方法 verifySubjects 执行成功");
   }
 }

@@ -15,11 +15,18 @@
  */
 package org.apache.ibatis.autoconstructor;
 
-import java.util.List;
-
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
+/**
+  * @description 一般情况下 POJO对象中 不使用基本数据类型
+  * @param
+  * @author LGL
+  *
+  */
 public interface AutoConstructorMapper {
+
   @Select("SELECT * FROM subject WHERE id = #{id}")
   PrimitiveSubject getSubject(final int id);
 
