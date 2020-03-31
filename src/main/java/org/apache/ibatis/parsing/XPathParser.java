@@ -15,12 +15,11 @@
  */
 package org.apache.ibatis.parsing;
 
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import org.apache.ibatis.builder.BuilderException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.*;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
@@ -29,27 +28,46 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
-
-import org.apache.ibatis.builder.BuilderException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
+ *
+ * @description 基于java XPath解析器 用于解析mybatis mybatis-config.xml
+ *              和 *Mapper.xml等xml配置文件
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public class XPathParser {
 
+  /**
+   * xml解析成 Document文档 对象
+   */
   private final Document document;
+
+  /**
+   * 是否校验标识
+   */
   private boolean validation;
+
+  /**
+   * xml实体解析器 xml的外部引用  本地加载dtd文件
+   */
   private EntityResolver entityResolver;
+
+  /**
+   * 属性 替换需要动态配置的属性值
+   */
   private Properties variables;
+
+  /**
+   * 解析器
+   */
   private XPath xpath;
 
   public XPathParser(String xml) {
@@ -136,12 +154,21 @@ public class XPathParser {
     this.variables = variables;
   }
 
+  /**
+   * @description eval 元素的方法，用于获得 Boolean、Short、Integer、Long、Float、Double、String 类型的元素的值。
+   * @author LGL
+   *
+   */
+
   public String evalString(String expression) {
     return evalString(document, expression);
   }
 
   public String evalString(Object root, String expression) {
+    // 调用evaluate方法 获得值  returnType-传入的是数据类型  返回对应的数据类型结果
     String result = (String) evaluate(expression, root, XPathConstants.STRING);
+
+    // 调用PropertyParser.paser属性解析器 动态参数值得替换    动态值实现的方式
     result = PropertyParser.parse(result, variables);
     return result;
   }
@@ -194,12 +221,21 @@ public class XPathParser {
     return (Double) evaluate(expression, root, XPathConstants.NUMBER);
   }
 
+  /**
+   * @description 返回XNode数组
+   * @param
+   * @author LGL
+   *
+   */
   public List<XNode> evalNodes(String expression) {
     return evalNodes(document, expression);
   }
 
   public List<XNode> evalNodes(Object root, String expression) {
+    // 1> 创建XNode对象实例数组
     List<XNode> xnodes = new ArrayList<>();
+
+    // 2> 封装节点数组  主要是为了动态替换值
     NodeList nodes = (NodeList) evaluate(expression, root, XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
       xnodes.add(new XNode(this, nodes.item(i), variables));
@@ -207,11 +243,12 @@ public class XPathParser {
     return xnodes;
   }
 
-  public XNode evalNode(String expression) {
+  public XNode evalNode(String expression) {// XNode对象
     return evalNode(document, expression);
   }
 
   public XNode evalNode(Object root, String expression) {
+    // 封装node节点 主要是为了动态替换值
     Node node = (Node) evaluate(expression, root, XPathConstants.NODE);
     if (node == null) {
       return null;
@@ -219,30 +256,46 @@ public class XPathParser {
     return new XNode(this, node, variables);
   }
 
+  /**
+   * 获得指定元素 或 节点的  值
+   * @param expression 表达式
+   * @param root 指定节点
+   * @param returnType 返回类型
+   * @return
+   */
   private Object evaluate(String expression, Object root, QName returnType) {
     try {
+      //解析器调用xpath的evaluate方法
       return xpath.evaluate(expression, root, returnType);
     } catch (Exception e) {
       throw new BuilderException("Error evaluating XPath.  Cause: " + e, e);
     }
   }
 
+  /**
+    * @description 将xml解析成document对象  xml解析
+    * @param
+    * @author LGL
+    *
+    */
   private Document createDocument(InputSource inputSource) {
     // important: this must only be called AFTER common constructor
     try {
+      // 1> 创建 DocumentBuilderFactory 对象
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      factory.setValidating(validation);
+      factory.setValidating(validation);// 设置是否校验xml
 
       factory.setNamespaceAware(false);
-      factory.setIgnoringComments(true);
-      factory.setIgnoringElementContentWhitespace(false);
-      factory.setCoalescing(false);
-      factory.setExpandEntityReferences(true);
+      factory.setIgnoringComments(true); //忽略注释
+      factory.setIgnoringElementContentWhitespace(false); //忽略空内容的元素
+      factory.setCoalescing(false); //是否合并
+      factory.setExpandEntityReferences(true); //扩展参照
 
+      // 2> 创建 DocumentBuilder 对象
       DocumentBuilder builder = factory.newDocumentBuilder();
-      builder.setEntityResolver(entityResolver);
-      builder.setErrorHandler(new ErrorHandler() {
+      builder.setEntityResolver(entityResolver); //设置实体解析器
+      builder.setErrorHandler(new ErrorHandler() {//设置错误处理器 实现全为空
         @Override
         public void error(SAXParseException exception) throws SAXException {
           throw exception;
@@ -258,16 +311,26 @@ public class XPathParser {
           // NOP
         }
       });
+
+      // 3> 解析 XML 文件
       return builder.parse(inputSource);
     } catch (Exception e) {
       throw new BuilderException("Error creating document instance.  Cause: " + e, e);
     }
   }
 
+  /**
+   * 公用的构造方法逻辑
+   * @param validation 是否检验
+   * @param variables 变量
+   * @param entityResolver 实体解析
+   */
   private void commonConstructor(boolean validation, Properties variables, EntityResolver entityResolver) {
     this.validation = validation;
     this.entityResolver = entityResolver;
     this.variables = variables;
+
+    //构建XPath解析器 初始化对象
     XPathFactory factory = XPathFactory.newInstance();
     this.xpath = factory.newXPath();
   }

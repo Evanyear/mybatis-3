@@ -14,6 +14,14 @@
  *    limitations under the License.
  */
 /**
+ *
+ * @description 解析器模块
+ *
+ *  1.对XPath进行封装  为mybatis初始化时解析mybatis-config.xml配置文件以及
+ *    映射配置文件提供支持
+ *  2.处理动态SQL语句中的占位符
+ *
+ *
  * Parsing utils.
  */
 package org.apache.ibatis.parsing;
