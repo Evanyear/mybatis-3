@@ -18,15 +18,37 @@ package org.apache.ibatis.reflection.property;
 import java.util.Iterator;
 
 /**
+ * 实现 Iterator 接口，属性分词器，支持迭代器的访问方式
+ *
  * @author Clinton Begin
  */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
+
+  /**
+   * 当前字符串
+   */
   private String name;
+
+  /**
+   * 索引的 {@link #name} ，因为 {@link #name} 如果存在 {@link #index} 会被更改
+   */
   private final String indexedName;
+
+  /**
+   * 编号。
+   *
+   * 对于数组 name[0] ，则 index = 0
+   * 对于 Map map[key] ，则 index = key
+   */
   private String index;
+
+  /**
+   * 剩余字符串
+   */
   private final String children;
 
   public PropertyTokenizer(String fullname) {
+    // 初始化 name、children 字符串，使用 . 作为分隔
     int delim = fullname.indexOf('.');
     if (delim > -1) {
       name = fullname.substring(0, delim);
@@ -36,6 +58,8 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
       children = null;
     }
     indexedName = name;
+
+    // 若存在 [ ，则获得 index ，并修改 name 。
     delim = name.indexOf('[');
     if (delim > -1) {
       index = name.substring(delim + 1, name.length() - 1);
@@ -59,11 +83,23 @@ public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
     return children;
   }
 
+  /**
+   * @description 判断是否有下一个元素
+   * @param
+   * @author LGL
+   *
+   */
   @Override
   public boolean hasNext() {
     return children != null;
   }
 
+  /**
+   * @description 迭代获得下一个 PropertyTokenizer 对象
+   * @param
+   * @author LGL
+   *
+   */
   @Override
   public PropertyTokenizer next() {
     return new PropertyTokenizer(children);

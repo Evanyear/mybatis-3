@@ -15,9 +15,9 @@
  */
 package org.apache.ibatis.reflection.property;
 
-import java.util.Locale;
-
 import org.apache.ibatis.reflection.ReflectionException;
+
+import java.util.Locale;
 
 /**
  * @author Clinton Begin
@@ -28,15 +28,22 @@ public final class PropertyNamer {
     // Prevent Instantiation of Static Class
   }
 
+  /**
+   * @description 通过方法名获取属性
+   * @param
+   * @author LGL
+   *
+   */
   public static String methodToProperty(String name) {
-    if (name.startsWith("is")) {
+    if (name.startsWith("is")) { // 判断是不是is开头的方法
       name = name.substring(2);
-    } else if (name.startsWith("get") || name.startsWith("set")) {
+    } else if (name.startsWith("get") || name.startsWith("set")) { // get 或者 set 开头的方法
       name = name.substring(3);
     } else {
       throw new ReflectionException("Error parsing property name '" + name + "'.  Didn't start with 'is', 'get' or 'set'.");
     }
 
+    // 判断驼峰显示属性
     if (name.length() == 1 || (name.length() > 1 && !Character.isUpperCase(name.charAt(1)))) {
       name = name.substring(0, 1).toLowerCase(Locale.ENGLISH) + name.substring(1);
     }
@@ -44,6 +51,7 @@ public final class PropertyNamer {
     return name;
   }
 
+  // 验证是否为属性的方法
   public static boolean isProperty(String name) {
     return isGetter(name) || isSetter(name);
   }

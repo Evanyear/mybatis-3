@@ -15,29 +15,44 @@
  */
 package org.apache.ibatis.reflection.invoker;
 
+import org.apache.ibatis.reflection.Reflector;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import org.apache.ibatis.reflection.Reflector;
 
 /**
  * @author Clinton Begin
  */
 public class MethodInvoker implements Invoker {
 
+  // 类
   private final Class<?> type;
+
+  // 方法
   private final Method method;
 
+  /**
+   * @description 构造
+   * @param
+   * @author LGL
+   *
+   */
   public MethodInvoker(Method method) {
     this.method = method;
-
+    // 参数大小为 1 一般是set方法  设置type为方法参数【0】
     if (method.getParameterTypes().length == 1) {
       type = method.getParameterTypes()[0];
-    } else {
+    } else { // 否则  一般是get方法  设置type为返回类型
       type = method.getReturnType();
     }
   }
 
+  /**
+   * @description 执行指定方法
+   * @param
+   * @author LGL
+   *
+   */
   @Override
   public Object invoke(Object target, Object[] args) throws IllegalAccessException, InvocationTargetException {
     try {
